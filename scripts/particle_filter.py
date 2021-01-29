@@ -149,8 +149,7 @@ class ParticleFilter:
         # make all the particle weights sum to 1.0
         
         # TODO
-
-
+        pass
 
     def publish_particle_cloud(self):
 
@@ -176,7 +175,7 @@ class ParticleFilter:
 
 
     def resample_particles(self):
-
+        pass
         # TODO
 
 
@@ -254,6 +253,7 @@ class ParticleFilter:
 
 
     def update_estimated_robot_pose(self):
+        pass
         # based on the particles within the particle cloud, update the robot pose estimate
         
         # TODO
@@ -261,14 +261,14 @@ class ParticleFilter:
 
     
     def update_particle_weights_with_measurement_model(self, data):
-
+        pass
         # TODO
 
 
         
 
     def update_particles_with_motion_model(self):
-
+        pass
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
 
