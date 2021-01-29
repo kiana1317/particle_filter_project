@@ -5,16 +5,16 @@ Kiana Hobbs, Elizabeth Singer
 ### Initialize Particle Cloud
 How you will initialize your particle cloud (initialize_particle_cloud()):
 </br>
-Given a map of the room, we will randomly pick particles inside the house, while verifying that it’s a place where the robot could be using the free threshold of 0.196. If the particle is in a valid location, we will randomly pick the orientation between 0 and 360 degrees, else we will try again until we create n particles at valid locations. 
+Given a map of the room, we will randomly pick particles inside the house, while verifying that it’s a place where the robot could be using the free threshold of 0.196. If the particle is in a valid location, we will randomly pick an orientation between 0 and 360 degrees, else we will try again until we create *n* valid particles. 
 </br></br>
-To test this function, we will first make sure that we can determine a point on the map at random, and check that the point is a valid placement. We will then test that we can generate a few such points. We can inspect these in Gazebo using rviz.
+To test this function, we will first ensure that we can determine a point on the map at random, and then check that the point is a valid placement. We will then test that we can generate a few such points, which can be inspected in Gazebo using rviz.
 
 ### Particle Positions Update
 How you will update the position of the particles will be updated based on the movements of the robot (update_particles_with_motion_model()):
 </br>
-We will monitor the odometry messages and apply the twist messages, which have the velocities, to each particle over the time since the last update. We can also include small random perturbations to each particle position to allow them to drift.
+We will monitor the odometry messages and apply the twist messages to each particle over the time since the last update. Moreover, we will include small random perturbations to each particle position to allow them to drift.
 </br></br>
-We will verify that we can observe the twist messages from the odometry and print these to the log. We will then verify that we can apply the motion from a twist message to a single particle and observe the change in both logs and on Gazebo. Then we will observe that we can apply the motion to all of the particles as the simulation progresses. 
+We will verify that we can observe the twist messages from the odometry topic and print these to the log. We will then verify that we can apply the motion from a twist message to a single particle and observe the change in both logs and on Gazebo, and later observe this phenomenon in all of the particles as the simulation progresses. 
 
 ### Importance Weights
 How you will compute the importance weights of each particle after receiving the robot's laser scan data (update_particle_weights_with_measurement_model()):
@@ -40,10 +40,10 @@ We can calculate by hand and then look at it and make sure it looks accurate to 
 ### Noise
 How you will incorporate noise into your particle filter.
 </br>
-There are a few ways we can incorporate noise into our particle filter. The first is that we can include noise in our motion update model, where we update the pose of each particle using not only the velocities from the odometry messages, but we also include some random drifts in the positions. This way, when we do resampling with replacement, if particles are selected multiple times, then these particles will drift away from each other, making more particles close to each other, to let us explore the space better. Another way we can incorporate noise into our model is to use a model, like the gaussian model, that updates the weights of the particles according to the formula for a gaussian, p(e_k) = (1/sqrt(2 pi sigma)) exp(-e_k^2 / 2 sigma^2), where sigma^2 is the variance of the gaussian. This will let us assume that the sensor returns are noisy returns. Another way we can incorporate noise into our particle filter is that we can choose to not only throw away particles that have almost zero weight, but we can also throw away particles with some probability that is a function of its weight, so that low weight particles are removed with much higher probability than high weight particles.
-</br></br> 
-We already mentioned that we will test the motion model noise by first setting the noise to be zero, and verifying that the particles move according to the twist messages, then using small noise to the motion, verifying that the particles are close to the zero noise case. For   resampling we can verify that only low probability particles are thrown away and that the number of high probability particles is much higher than those of lower probability. We will test each function separately before incorporating them into larger functions.
+Some of our plans for incorporating noise includes, accounting for noise in our motion update model with drifting, using the Gaussian Model when updating weights, and by removing low weight particles as well as those with zero weights.
 
+</br></br> 
+As mentioned previously, we will test the motion model noise by first setting the noise to be zero, and verifying that the particles move according to the twist messages, then using small noise to the motion, verifying that the particles are close to the zero noise case. For resampling we can verify that only low probability particles are thrown away and that the number of high probability particles is much higher than those of lower probability. 
 
 ## Timeline
 By February 2nd, we plan to finish the following functions: initialize_particle_cloud(), update_particles_with_motion_model(), and update_particle_weights_with_measurement_model(). Moreover, by February 9th, we finish the remaining functions: resample_particles(), normalize_particles(), and update_estimated_robot_pose().
