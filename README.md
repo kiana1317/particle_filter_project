@@ -1,5 +1,6 @@
 # Particle Filter Project
-## Team: Kiana Hobbs, Elizabeth Singer
+## Team
+Kiana Hobbs, Elizabeth Singer
 ## Implementation
 ### Initialize Particle Cloud
 How you will initialize your particle cloud (initialize_particle_cloud()):
