@@ -290,13 +290,13 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
         pass
         # TODO data.ranges[0-359]
-        range_data = np.array(data.ranges)
-        minval = min(range_data)
-        mindir = np.argmin(range_data)
-        part_range = np.array(data.ranges)
-        for part in self.particle_cloud:
-            for i in range(0,360)
-            part_range
+        #range_data = np.array(data.ranges)
+        #minval = min(range_data)
+        #mindir = np.argmin(range_data)
+        #part_range = np.array(data.ranges)
+        #for part in self.particle_cloud:
+        #    for i in range(0,360)
+        #    part_range
 
         
 
