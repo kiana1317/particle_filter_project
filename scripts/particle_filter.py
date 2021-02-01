@@ -17,7 +17,7 @@ from numpy.random import random_sample
 import math
 from copy import deepcopy
 
-from random import randint, random
+from random import randint, random, uniform
 
 
 
@@ -86,7 +86,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 10000
+        self.num_particles = 1000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -131,25 +131,50 @@ class ParticleFilter:
 
         self.map = data
 
-        self.occupancy_field = OccupancyField(data)
+        # self.occupancy_field = OccupancyField(data)
 
     
 
     def initialize_particle_cloud(self):
-        
-        # TODO
+        thresh = .1
+        min_x = self.map.info.origin.position.x
+        min_y = self.map.info.origin.position.y
+        max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
+        max_y = min_y + self.map.info.resolution*(self.map.info.height-1)
 
+        for i in range(self.num_particles):
+            p=Pose()
+            valid = 0
+            while (valid == 0):
+                p.position.x = uniform(min_x,max_x)
+                p.position.y = uniform(min_y,max_y)
+                column = int((p.position.x - min_x)/self.map.info.resolution)
+                row = int((p.position.y - min_y)/self.map.info.resolution) 
+                index = row*self.map.info.width + column
+                occ = self.map.data[index]
+                if (occ > -1 and occ < thresh):
+                    valid = 1
+                    
+            q = quaternion_from_euler(0,0,uniform(0,359)) # quaternion for orientation
+            p.orientation.x = q[0]
+            p.orientation.y = q[1]
+            p.orientation.z = q[2]
+            p.orientation.w = q[3]
+            self.particle_cloud.append(Particle(p,1))
 
         self.normalize_particles()
-
         self.publish_particle_cloud()
+        print ("initialization of particles done...")
 
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
-        
-        # TODO
-        pass
+        # pass
+        sum_weights = 0
+        for part in self.particle_cloud:
+            sum_weights = sum_weights + part.w
+        for part in self.particle_cloud:
+            part.w = part.w / sum_weights
 
     def publish_particle_cloud(self):
 
@@ -176,7 +201,9 @@ class ParticleFilter:
 
     def resample_particles(self):
         pass
-        # TODO
+        #for part in self.particle_cloud:
+        #    part.w = 
+
 
 
 
@@ -262,18 +289,45 @@ class ParticleFilter:
     
     def update_particle_weights_with_measurement_model(self, data):
         pass
-        # TODO
-
+        # TODO data.ranges[0-359]
+        range_data = np.array(data.ranges)
+        minval = min(range_data)
+        mindir = np.argmin(range_data)
+        part_range = np.array(data.ranges)
+        for part in self.particle_cloud:
+            for i in range(0,360)
+            part_range
 
         
 
     def update_particles_with_motion_model(self):
-        pass
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
-
-        # TODO
-
+        curr_x = self.odom_pose.pose.position.x
+        old_x = self.odom_pose_last_motion_update.pose.position.x
+        d_x = curr_x - old_x
+        curr_y = self.odom_pose.pose.position.y
+        old_y = self.odom_pose_last_motion_update.pose.position.y
+        d_y = curr_y - old_y
+        curr_qx = self.odom_pose.pose.orientation.x
+        curr_qy = self.odom_pose.pose.orientation.y
+        curr_qz = self.odom_pose.pose.orientation.z
+        curr_qw = self.odom_pose.pose.orientation.w
+        old_qx = self.odom_pose_last_motion_update.pose.orientation.x
+        old_qy = self.odom_pose_last_motion_update.pose.orientation.y
+        old_qz = self.odom_pose_last_motion_update.pose.orientation.z
+        old_qw = self.odom_pose_last_motion_update.pose.orientation.w
+        d_qx = curr_qx-old_qx
+        d_qy = curr_qx-old_qy
+        d_qz = curr_qx-old_qz
+        d_qw = curr_qx-old_qw
+        for part in self.particle_cloud:
+            part.pose.position.x = part.pose.position.x + d_x
+            part.pose.position.y = part.pose.position.y + d_y
+            part.pose.orientation.x = part.pose.orientation.x + d_qx
+            part.pose.orientation.y = part.pose.orientation.x + d_qy
+            part.pose.orientation.z = part.pose.orientation.x + d_qz
+            part.pose.orientation.w = part.pose.orientation.x + d_qw
 
 
 if __name__=="__main__":
