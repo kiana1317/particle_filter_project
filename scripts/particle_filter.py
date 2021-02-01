@@ -154,17 +154,18 @@ class ParticleFilter:
                 occ = self.map.data[index]
                 if (occ > -1 and occ < thresh):
                     valid = 1
-                    
-            q = quaternion_from_euler(0,0,uniform(0,359)) # quaternion for orientation
+            angle = uniform(0,2*math.pi)
+            q = quaternion_from_euler(0,0,angle) # quaternion for orientation
             p.orientation.x = q[0]
             p.orientation.y = q[1]
             p.orientation.z = q[2]
             p.orientation.w = q[3]
+            #print("particle yaw is " + str(get_yaw_from_pose(p)))
             self.particle_cloud.append(Particle(p,1))
 
         self.normalize_particles()
         self.publish_particle_cloud()
-        print ("initialization of particles done...")
+        #print ("initialization of particles done...")
 
 
     def normalize_particles(self):
@@ -184,6 +185,8 @@ class ParticleFilter:
 
         for part in self.particle_cloud:
             particle_cloud_pose_array.poses.append(part.pose)
+            print("particle yaw is " + str(get_yaw_from_pose(part.pose))) # all same yaw??
+
 
         self.particles_pub.publish(particle_cloud_pose_array)
 
@@ -280,10 +283,17 @@ class ParticleFilter:
 
 
     def update_estimated_robot_pose(self):
-        pass
+        #pass
         # based on the particles within the particle cloud, update the robot pose estimate
-        
-        # TODO
+        newpos = Pose()
+        for part in self.particle_cloud:
+            newpos.position.x = newpos.position.x + part.pose.position.x/self.num_particles
+            newpos.position.y = newpos.position.y + part.pose.position.y/self.num_particles
+            newpos.orientation.x = newpos.orientation.x + part.pose.orientation.x/self.num_particles
+            newpos.orientation.y = newpos.orientation.y + part.pose.orientation.y/self.num_particles
+            newpos.orientation.z = newpos.orientation.z + part.pose.orientation.z/self.num_particles
+            newpos.orientation.w = newpos.orientation.w + part.pose.orientation.w/self.num_particles
+        self.robot_estimate = newpos
 
 
     
@@ -313,22 +323,25 @@ class ParticleFilter:
         curr_qy = self.odom_pose.pose.orientation.y
         curr_qz = self.odom_pose.pose.orientation.z
         curr_qw = self.odom_pose.pose.orientation.w
+        curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
         old_qx = self.odom_pose_last_motion_update.pose.orientation.x
         old_qy = self.odom_pose_last_motion_update.pose.orientation.y
         old_qz = self.odom_pose_last_motion_update.pose.orientation.z
         old_qw = self.odom_pose_last_motion_update.pose.orientation.w
+        old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
         d_qx = curr_qx-old_qx
-        d_qy = curr_qx-old_qy
-        d_qz = curr_qx-old_qz
-        d_qw = curr_qx-old_qw
+        d_qy = curr_qy-old_qy
+        d_qz = curr_qz-old_qz
+        d_qw = curr_qw-old_qw
+        d_yaw = curr_yaw - old_yaw
         for part in self.particle_cloud:
-            part.pose.position.x = part.pose.position.x + d_x
-            part.pose.position.y = part.pose.position.y + d_y
-            part.pose.orientation.x = part.pose.orientation.x + d_qx
-            part.pose.orientation.y = part.pose.orientation.x + d_qy
-            part.pose.orientation.z = part.pose.orientation.x + d_qz
-            part.pose.orientation.w = part.pose.orientation.x + d_qw
-
+            part.pose.position.x = part.pose.position.x + d_x + random()*self.map.info.resolution
+            part.pose.position.y = part.pose.position.y + d_y + random()*self.map.info.resolution
+            q = quaternion_from_euler(0,0,get_yaw_from_pose(part.pose)+d_yaw)
+            part.pose.orientation.x = q[0]
+            part.pose.orientation.y = q[1]
+            part.pose.orientation.z = q[2]
+            part.pose.orientation.w = q[3]
 
 if __name__=="__main__":
     
