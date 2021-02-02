@@ -13,7 +13,7 @@ from tf import TransformBroadcaster
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 import numpy as np
-from numpy.random import random_sample
+from numpy.random import random_sample 
 import math
 from copy import deepcopy
 
@@ -86,7 +86,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 1000
+        self.num_particles = 10000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -145,6 +145,9 @@ class ParticleFilter:
         for i in range(self.num_particles):
             p=Pose()
             valid = 0
+            while(self.map.info.resolution == 0):
+                pass
+              
             while (valid == 0):
                 p.position.x = uniform(min_x,max_x)
                 p.position.y = uniform(min_y,max_y)
@@ -155,7 +158,9 @@ class ParticleFilter:
                 if (occ > -1 and occ < thresh):
                     valid = 1
             angle = uniform(0,2*math.pi)
+            #angle = 0 p.position.x=-3 p.position.y=1
             q = quaternion_from_euler(0,0,angle) # quaternion for orientation
+            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2)
             p.orientation.x = q[0]
             p.orientation.y = q[1]
             p.orientation.z = q[2]
@@ -185,12 +190,8 @@ class ParticleFilter:
 
         for part in self.particle_cloud:
             particle_cloud_pose_array.poses.append(part.pose)
-            print("particle yaw is " + str(get_yaw_from_pose(part.pose))) # all same yaw??
-
 
         self.particles_pub.publish(particle_cloud_pose_array)
-
-
 
 
     def publish_estimated_robot_pose(self):
@@ -200,15 +201,25 @@ class ParticleFilter:
         robot_pose_estimate_stamped.header = Header(stamp=rospy.Time.now(), frame_id=self.map_topic)
         self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
-
-
     def resample_particles(self):
-        pass
-        #for part in self.particle_cloud:
-        #    part.w = 
-
-
-
+        minthresh = 10/self.num_particles # 10% of particles resampled
+        indcs = np.array(range(self.num_particles))
+        probs =[]
+        for part in self.particle_cloud:
+            probs.append(part.w)
+        bins = np.add.accumulate(probs)
+        for part in self.particle_cloud:
+            if (part.w < minthresh):
+                idx = indcs[np.digitize(random(),bins)]
+                part.pose.position.x = self.particle_cloud[idx].pose.position.x + np.random.normal()*self.map.info.resolution*2
+                part.pose.position.y = self.particle_cloud[idx].pose.position.y + np.random.normal()*self.map.info.resolution*2
+                yaw = get_yaw_from_pose(self.particle_cloud[idx].pose)+(random()-.5)*math.pi/8
+                q = quaternion_from_euler(0,0,yaw)
+                q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2)
+                part.pose.orientation.x = q[0]
+                part.pose.orientation.y = q[1]
+                part.pose.orientation.z = q[2]
+                part.pose.orientation.w = q[3]
 
     def robot_scan_received(self, data):
 
@@ -293,22 +304,68 @@ class ParticleFilter:
             newpos.orientation.y = newpos.orientation.y + part.pose.orientation.y/self.num_particles
             newpos.orientation.z = newpos.orientation.z + part.pose.orientation.z/self.num_particles
             newpos.orientation.w = newpos.orientation.w + part.pose.orientation.w/self.num_particles
-        self.robot_estimate = newpos
+            norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
+                        +newpos.orientation.w**2)
+            newpos.orientation.x = newpos.orientation.x / norm
+            newpos.orientation.y = newpos.orientation.y / norm
+            newpos.orientation.z = newpos.orientation.z / norm
+            newpos.orientation.w = newpos.orientation.w / norm
+            self.robot_estimate= newpos
 
 
-    
     def update_particle_weights_with_measurement_model(self, data):
-        pass
-        # TODO data.ranges[0-359]
-        #range_data = np.array(data.ranges)
-        #minval = min(range_data)
-        #mindir = np.argmin(range_data)
-        #part_range = np.array(data.ranges)
-        #for part in self.particle_cloud:
-        #    for i in range(0,360)
-        #    part_range
-
-        
+        thresh = .1
+        range_data = np.array(data.ranges) # scanner range data
+        max_r = np.amax(range_data,where=~np.isinf(range_data),initial=-1,axis=0)
+        forval = min(range_data[0],max_r) # straight ahead
+        lval = min(range_data[89],max_r)
+        bval = min(range_data[179],max_r)
+        rval = min(range_data[269],max_r)
+        #minval = min(range_data) # closest point in space
+        #mindir = np.argmin(range_data) # find direction to closest object
+        #print("max range = " + str(max_r))
+        #min_a = np.argmin(range_data)
+        min_x = self.map.info.origin.position.x
+        min_y = self.map.info.origin.position.y
+        max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
+        max_y = min_y + self.map.info.resolution*(self.map.info.height-1)
+        for part in self.particle_cloud:
+            px = part.pose.position.x
+            py = part.pose.position.y
+            col = int((px - min_x)/self.map.info.resolution)
+            row = int((py - min_y)/self.map.info.resolution) 
+            index = row*self.map.info.width + col
+            occ = self.map.data[index]
+            zeroout = 0
+            if (occ > thresh or occ < 0):
+                zeroout = 1
+                hit = 1
+            yaw = get_yaw_from_pose(part.pose)
+            dr = self.map.info.resolution/2
+            err = 0
+            for i in [0,89,179,269]:
+                hit = 0
+                rr = 0
+                while (hit == 0):# trace a ray until we hit a wall straight ahead and closest dir
+                    rr = rr + dr
+                    sx = px + math.cos(yaw+i*math.pi/180)*rr
+                    sy = py + math.sin(yaw+i*math.pi/180)*rr
+                    col = int((sx - min_x)/self.map.info.resolution)
+                    row = int((sy - min_y)/self.map.info.resolution) 
+                    index = row*self.map.info.width + col
+                    occ = self.map.data[index]
+                    if (occ > thresh or occ < 0 or sx > max_x or sy > max_y
+                        or sx < min_x or sy < min_y or rr>max_x): # if occupied then we hit the wall
+                        hit = 1
+                erri = (range_data[i]-rr) if (range_data[i] < 5) else 0
+                #print("yaw:"+str(int(yaw*180/math.pi))+" rr ="+str(rr)+" in direction"+str(i)+" true range is "+str(range_data[i]))
+                err = err + erri**2 # difference in closest object distances
+            if zeroout == 1:
+                part.w = 0
+            else:
+                part.w = 1/err
+                #print("p = "+ str(part.w))
+        self.normalize_particles() # renormalize
 
     def update_particles_with_motion_model(self):
         # based on the how the robot has moved (calculated from its odometry), we'll  move
@@ -335,9 +392,10 @@ class ParticleFilter:
         d_qw = curr_qw-old_qw
         d_yaw = curr_yaw - old_yaw
         for part in self.particle_cloud:
-            part.pose.position.x = part.pose.position.x + d_x + random()*self.map.info.resolution
-            part.pose.position.y = part.pose.position.y + d_y + random()*self.map.info.resolution
-            q = quaternion_from_euler(0,0,get_yaw_from_pose(part.pose)+d_yaw)
+            part.pose.position.x = part.pose.position.x + d_x + np.random.normal()*self.map.info.resolution*2
+            part.pose.position.y = part.pose.position.y + d_y + np.random.normal()*self.map.info.resolution*2
+            q = quaternion_from_euler(0,0,get_yaw_from_pose(part.pose)+d_yaw+uniform(-1,1)*math.pi/16)
+            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2)
             part.pose.orientation.x = q[0]
             part.pose.orientation.y = q[1]
             part.pose.orientation.z = q[2]
