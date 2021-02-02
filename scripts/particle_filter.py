@@ -209,7 +209,7 @@ class ParticleFilter:
 
         for part in self.particle_cloud:
             particle_cloud_pose_array.poses.append(part.pose)
-            print("particle yaw is " + str(get_yaw_from_pose(part.pose))) # all same yaw??
+            # print("particle yaw is " + str(get_yaw_from_pose(part.pose))) # all same yaw??
 
 
         self.particles_pub.publish(particle_cloud_pose_array)
@@ -227,6 +227,8 @@ class ParticleFilter:
 
 
     def resample_particles(self):
+        # check to see if the particles are still on the grid
+        
         pass
         #for part in self.particle_cloud:
         #    part.w = 
@@ -307,7 +309,7 @@ class ParticleFilter:
 
 
     def update_estimated_robot_pose(self):
-        #pass
+        pass
         # based on the particles within the particle cloud, update the robot pose estimate
         newpos = Pose()
         for part in self.particle_cloud:
@@ -335,6 +337,7 @@ class ParticleFilter:
         
 
     def update_particles_with_motion_model(self):
+        # pass
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
         curr_x = self.odom_pose.pose.position.x
