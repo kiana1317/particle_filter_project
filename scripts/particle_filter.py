@@ -136,7 +136,7 @@ class ParticleFilter:
         for i in range(len(data.data)):
             if data.data[i] == 0:
                 self.occupancy_field.append(i)
-        
+
     
 
     def initialize_particle_cloud(self):
