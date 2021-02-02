@@ -130,32 +130,36 @@ class ParticleFilter:
     def get_map(self, data):
 
         self.map = data
-
+        # Finds the positions within the occupancy field that are currently empty
+        self.occupancy_field =[]
+        for i in range(len(data.data)):
+            if data.data[i] == 0:
+                self.occupancy_field.append(i)
         # self.occupancy_field = OccupancyField(data)
 
     
 
     def initialize_particle_cloud(self):
-        thresh = .1
-        min_x = self.map.info.origin.position.x
-        min_y = self.map.info.origin.position.y
-        max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
-        max_y = min_y + self.map.info.resolution*(self.map.info.height-1)
+        # Wait until the occupancy field is populated
+        while not self.occupancy_field:
+            pass
 
-        for i in range(self.num_particles):
-            p=Pose()
-            valid = 0
-            while (valid == 0):
-                p.position.x = uniform(min_x,max_x)
-                p.position.y = uniform(min_y,max_y)
-                column = int((p.position.x - min_x)/self.map.info.resolution)
-                row = int((p.position.y - min_y)/self.map.info.resolution) 
-                index = row*self.map.info.width + column
-                occ = self.map.data[index]
-                if (occ > -1 and occ < thresh):
-                    valid = 1
-                    
-            q = quaternion_from_euler(0,0,uniform(0,359)) # quaternion for orientation
+        choices = self.occupancy_field
+        probability = 1.0 / len(choices)
+        probabilities = [probability] * len(choices)
+        n = self.num_particles
+        particles_sample = draw_random_sample(choices, probabilities, n)
+
+        for i in particles_sample:
+            p = Pose()
+            # translate the row grid to coordinates
+            width = self.map.info.width
+            origin_x = self.map.info.origin.position.x
+            origin_y = self.map.info.origin.position.y
+            p.position.y = origin_y + (i / width * self.map.info.resolution) 
+            p.position.x = origin_x + (i % width * self.map.info.resolution)
+            
+            q = quaternion_from_euler(0,0,get_yaw_from_pose(p))
             p.orientation.x = q[0]
             p.orientation.y = q[1]
             p.orientation.z = q[2]
@@ -164,7 +168,7 @@ class ParticleFilter:
 
         self.normalize_particles()
         self.publish_particle_cloud()
-        print ("initialization of particles done...")
+        # print ("initialization of particles done...")
 
 
     def normalize_particles(self):
