@@ -1,6 +1,5 @@
 # Particle Filter Project
 ![Particles in motion](particle_filter.gif)
-![Particles in motion](particle_filter.gif)
 <gif-player src="particle_filter.gif" speed="4"></gif-player>
 ## Team
 Kiana Hobbs, Elizabeth Singer
