@@ -86,7 +86,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 10000
+        self.num_particles = 1000  # more than about 1000 particles causes the wierd "no such transformation" error
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -130,52 +130,48 @@ class ParticleFilter:
     def get_map(self, data):
 
         self.map = data
-
         # self.occupancy_field = OccupancyField(data)
 
     
 
     def initialize_particle_cloud(self):
-        thresh = .1
-        min_x = self.map.info.origin.position.x
+        thresh = .1  # this threshold keeps particles only in the house
+        min_x = self.map.info.origin.position.x   #find the LL and UR points in map
         min_y = self.map.info.origin.position.y
         max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
         max_y = min_y + self.map.info.resolution*(self.map.info.height-1)
 
         for i in range(self.num_particles):
-            p=Pose()
-            valid = 0
+            p=Pose() # create pose object
+            valid = 0 # mark as invalid to start
             while(self.map.info.resolution == 0):
-                pass
+                pass   # sometimes the map isn't updated yet, so this prevents a divide by zero 
               
             while (valid == 0):
-                p.position.x = uniform(min_x,max_x)
-                p.position.y = uniform(min_y,max_y)
-                column = int((p.position.x - min_x)/self.map.info.resolution)
-                row = int((p.position.y - min_y)/self.map.info.resolution) 
+                p.position.x = uniform(min_x,max_x) # particle x coord
+                p.position.y = uniform(min_y,max_y) # particle y coord
+                column = int((p.position.x - min_x)/self.map.info.resolution) # row/col in map for 
+                row = int((p.position.y - min_y)/self.map.info.resolution)    # the particle
                 index = row*self.map.info.width + column
-                occ = self.map.data[index]
+                occ = self.map.data[index]      # check its occupancy in the map
                 if (occ > -1 and occ < thresh):
-                    valid = 1
-            angle = uniform(0,2*math.pi)
+                    valid = 1                   # if valid location, keep it
+            angle = uniform(0,2*math.pi)        # set a random yaw angle
             #angle = 0 p.position.x=-3 p.position.y=1
             q = quaternion_from_euler(0,0,angle) # quaternion for orientation
-            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2)
+            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize it
             p.orientation.x = q[0]
             p.orientation.y = q[1]
             p.orientation.z = q[2]
             p.orientation.w = q[3]
-            #print("particle yaw is " + str(get_yaw_from_pose(p)))
             self.particle_cloud.append(Particle(p,1))
 
         self.normalize_particles()
         self.publish_particle_cloud()
-        #print ("initialization of particles done...")
 
 
     def normalize_particles(self):
-        # make all the particle weights sum to 1.0
-        # pass
+        # make all the particle weights sum to 1.0 by dividing by sum over all particle weights
         sum_weights = 0
         for part in self.particle_cloud:
             sum_weights = sum_weights + part.w
@@ -202,20 +198,22 @@ class ParticleFilter:
         self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
     def resample_particles(self):
-        minthresh = 10/self.num_particles # 10% of particles resampled
-        indcs = np.array(range(self.num_particles))
+        minthresh = 10/self.num_particles # this weight threshold keeps about 90% of the particles 
+        indcs = np.array(range(self.num_particles)) # make index vector
         probs =[]
-        for part in self.particle_cloud:
+        for part in self.particle_cloud:  # make probability vector
             probs.append(part.w)
-        bins = np.add.accumulate(probs)
+        bins = np.add.accumulate(probs)   # make bins for the cumulative distribution from the weights
         for part in self.particle_cloud:
-            if (part.w < minthresh):
-                idx = indcs[np.digitize(random(),bins)]
+            if (part.w < minthresh):      # if the particle weight is below the thrshold we resample it
+                idx = indcs[np.digitize(random(),bins)]  # sample from the distribution
+                # update the particle position to the sampled particle, and add a normal noise offset to x and y position
                 part.pose.position.x = self.particle_cloud[idx].pose.position.x + np.random.normal()*self.map.info.resolution*2
                 part.pose.position.y = self.particle_cloud[idx].pose.position.y + np.random.normal()*self.map.info.resolution*2
+                # update the yaw angle to the sampled particle and add a small random angle offset
                 yaw = get_yaw_from_pose(self.particle_cloud[idx].pose)+(random()-.5)*math.pi/8
                 q = quaternion_from_euler(0,0,yaw)
-                q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2)
+                q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion since ROS complained 
                 part.pose.orientation.x = q[0]
                 part.pose.orientation.y = q[1]
                 part.pose.orientation.z = q[2]
@@ -297,7 +295,7 @@ class ParticleFilter:
         #pass
         # based on the particles within the particle cloud, update the robot pose estimate
         newpos = Pose()
-        for part in self.particle_cloud:
+        for part in self.particle_cloud: # loop over the particles and average the poses of all particles
             newpos.position.x = newpos.position.x + part.pose.position.x/self.num_particles
             newpos.position.y = newpos.position.y + part.pose.position.y/self.num_particles
             newpos.orientation.x = newpos.orientation.x + part.pose.orientation.x/self.num_particles
@@ -306,66 +304,63 @@ class ParticleFilter:
             newpos.orientation.w = newpos.orientation.w + part.pose.orientation.w/self.num_particles
             norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
                         +newpos.orientation.w**2)
-            newpos.orientation.x = newpos.orientation.x / norm
-            newpos.orientation.y = newpos.orientation.y / norm
+            newpos.orientation.x = newpos.orientation.x / norm # normalize the quaternions
+            newpos.orientation.y = newpos.orientation.y / norm # since ROS complained about an unnormalized one
             newpos.orientation.z = newpos.orientation.z / norm
             newpos.orientation.w = newpos.orientation.w / norm
             self.robot_estimate= newpos
 
 
     def update_particle_weights_with_measurement_model(self, data):
-        thresh = .1
+        thresh = .1   # used to find the walls with the ray tracing method
         range_data = np.array(data.ranges) # scanner range data
         max_r = np.amax(range_data,where=~np.isinf(range_data),initial=-1,axis=0)
-        forval = min(range_data[0],max_r) # straight ahead
-        lval = min(range_data[89],max_r)
-        bval = min(range_data[179],max_r)
-        rval = min(range_data[269],max_r)
-        #minval = min(range_data) # closest point in space
-        #mindir = np.argmin(range_data) # find direction to closest object
-        #print("max range = " + str(max_r))
-        #min_a = np.argmin(range_data)
+        # this is the largest non-infinite range from the scanner
+        forval = min(range_data[0],max_r) # straight ahead scanner value
+        lval = min(range_data[89],max_r)  # left scanner value
+        bval = min(range_data[179],max_r) # behind scanner value
+        rval = min(range_data[269],max_r) # right scanner value
         min_x = self.map.info.origin.position.x
         min_y = self.map.info.origin.position.y
         max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
         max_y = min_y + self.map.info.resolution*(self.map.info.height-1)
         for part in self.particle_cloud:
-            px = part.pose.position.x
+            px = part.pose.position.x     # coordinates of particle
             py = part.pose.position.y
             col = int((px - min_x)/self.map.info.resolution)
             row = int((py - min_y)/self.map.info.resolution) 
             index = row*self.map.info.width + col
-            occ = self.map.data[index]
-            zeroout = 0
-            if (occ > thresh or occ < 0):
-                zeroout = 1
+            occ = self.map.data[index]    # particle in the house?
+            zeroout = 0                  
+            if (occ > thresh or occ < 0): # if outside or in wall
+                zeroout = 1               # then set weight to zero   
                 hit = 1
-            yaw = get_yaw_from_pose(part.pose)
-            dr = self.map.info.resolution/2
+            yaw = get_yaw_from_pose(part.pose) # particle yaw
+            dr = self.map.info.resolution/2    # small step for ray tracing
             err = 0
-            for i in [0,89,179,269]:
+            for i in [0,89,179,269]:      # look front, left, back, and right
                 hit = 0
                 rr = 0
-                while (hit == 0):# trace a ray until we hit a wall straight ahead and closest dir
-                    rr = rr + dr
-                    sx = px + math.cos(yaw+i*math.pi/180)*rr
-                    sy = py + math.sin(yaw+i*math.pi/180)*rr
+                while (hit == 0):# trace a ray until we hit a wall 
+                    rr = rr + dr  # move ray forward
+                    sx = px + math.cos(yaw+i*math.pi/180)*rr 
+                    sy = py + math.sin(yaw+i*math.pi/180)*rr 
                     col = int((sx - min_x)/self.map.info.resolution)
                     row = int((sy - min_y)/self.map.info.resolution) 
                     index = row*self.map.info.width + col
-                    occ = self.map.data[index]
+                    occ = self.map.data[index]  # check to see if hit a wall yet, or outside
                     if (occ > thresh or occ < 0 or sx > max_x or sy > max_y
                         or sx < min_x or sy < min_y or rr>max_x): # if occupied then we hit the wall
                         hit = 1
-                erri = (range_data[i]-rr) if (range_data[i] < 5) else 0
-                #print("yaw:"+str(int(yaw*180/math.pi))+" rr ="+str(rr)+" in direction"+str(i)+" true range is "+str(range_data[i]))
-                err = err + erri**2 # difference in closest object distances
-            if zeroout == 1:
-                part.w = 0
+                # if the laser has a valid value in this direction, calculate the error
+                # if the laser is infinite there, then we'll ignore this direction
+                erri = (range_data[i]-rr) if (range_data[i] < 5) else 0  
+                err = err + erri**2 # add up square errors
+            if zeroout == 1: 
+                part.w = 0  # if we planned to zero this particle out, set weight to zero
             else:
-                part.w = 1/err
-                #print("p = "+ str(part.w))
-        self.normalize_particles() # renormalize
+                part.w = 1/err # make the weight 1/square error
+        self.normalize_particles() # renormalize the particles
 
     def update_particles_with_motion_model(self):
         # based on the how the robot has moved (calculated from its odometry), we'll  move
@@ -392,10 +387,12 @@ class ParticleFilter:
         d_qw = curr_qw-old_qw
         d_yaw = curr_yaw - old_yaw
         for part in self.particle_cloud:
+            # move the particle x and y coordinates, and add a small random amount in each direction
             part.pose.position.x = part.pose.position.x + d_x + np.random.normal()*self.map.info.resolution*2
             part.pose.position.y = part.pose.position.y + d_y + np.random.normal()*self.map.info.resolution*2
+            # update the yaw, and then add a small uniform error to the yaw 
             q = quaternion_from_euler(0,0,get_yaw_from_pose(part.pose)+d_yaw+uniform(-1,1)*math.pi/16)
-            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2)
+            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion
             part.pose.orientation.x = q[0]
             part.pose.orientation.y = q[1]
             part.pose.orientation.z = q[2]
