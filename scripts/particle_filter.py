@@ -158,8 +158,8 @@ class ParticleFilter:
             origin_y = self.map.info.origin.position.y
             p.position.y = origin_y + (i / width * self.map.info.resolution) 
             p.position.x = origin_x + (i % width * self.map.info.resolution)
-            
-            q = quaternion_from_euler(0,0,get_yaw_from_pose(p))
+            angle = uniform(0,2*math.pi)        # set a random yaw angle
+            q = quaternion_from_euler(0,0,angle) # quaternion for orientation
             p.orientation.x = q[0]
             p.orientation.y = q[1]
             p.orientation.z = q[2]
