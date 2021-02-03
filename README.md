@@ -1,4 +1,5 @@
 # Particle Filter Project
+![Particles in motion](particle_filter.gif)
 ## Team
 Kiana Hobbs, Elizabeth Singer
 ## Implementation
