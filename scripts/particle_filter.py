@@ -131,7 +131,12 @@ class ParticleFilter:
 
         self.map = data
         # self.occupancy_field = OccupancyField(data)
-
+        # Finds the positions within the occupancy field that are currently empty
+        self.occupancy_field =[]
+        for i in range(len(data.data)):
+            if data.data[i] == 0:
+                self.occupancy_field.append(i)
+        
     
 
     def initialize_particle_cloud(self):
