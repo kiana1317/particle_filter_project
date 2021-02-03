@@ -198,6 +198,16 @@ class ParticleFilter:
         self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
     def resample_particles(self):
+        # Different Implementation
+        # probabilities = []
+        # for part in self.particle_cloud:
+        #     probabilities.append(part.w)
+        # n = self.num_particles
+        # particles_sample = draw_random_sample(self.particle_cloud, probabilities, self.num_particles)
+        
+        # for part in particles_sample:
+        #     part 
+        #############
         minthresh = 10/self.num_particles # this weight threshold keeps about 90% of the particles 
         indcs = np.array(range(self.num_particles)) # make index vector
         probs =[]
@@ -368,9 +378,11 @@ class ParticleFilter:
         curr_x = self.odom_pose.pose.position.x
         old_x = self.odom_pose_last_motion_update.pose.position.x
         d_x = curr_x - old_x
+
         curr_y = self.odom_pose.pose.position.y
         old_y = self.odom_pose_last_motion_update.pose.position.y
         d_y = curr_y - old_y
+        
         curr_qx = self.odom_pose.pose.orientation.x
         curr_qy = self.odom_pose.pose.orientation.y
         curr_qz = self.odom_pose.pose.orientation.z
