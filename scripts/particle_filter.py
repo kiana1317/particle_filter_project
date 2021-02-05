@@ -86,7 +86,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 1000  # more than about 1000 particles causes the wierd "no such transformation" error
+        self.num_particles = 2500  # more than about 1000 particles causes the wierd "no such transformation" error
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -318,7 +318,7 @@ class ParticleFilter:
             newpos.orientation.y = newpos.orientation.y / norm # since ROS complained about an unnormalized one
             newpos.orientation.z = newpos.orientation.z / norm
             newpos.orientation.w = newpos.orientation.w / norm
-            self.robot_estimate= newpos
+        self.robot_estimate= newpos
 
 
     def update_particle_weights_with_measurement_model(self, data):
@@ -327,9 +327,9 @@ class ParticleFilter:
         max_r = np.amax(range_data,where=~np.isinf(range_data),initial=-1,axis=0)
         # this is the largest non-infinite range from the scanner
         forval = min(range_data[0],max_r) # straight ahead scanner value
-        lval = min(range_data[89],max_r)  # left scanner value
-        bval = min(range_data[179],max_r) # behind scanner value
-        rval = min(range_data[269],max_r) # right scanner value
+        lval = min(range_data[90],max_r)  # left scanner value
+        bval = min(range_data[180],max_r) # behind scanner value
+        rval = min(range_data[270],max_r) # right scanner value
         min_x = self.map.info.origin.position.x
         min_y = self.map.info.origin.position.y
         max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
@@ -344,27 +344,29 @@ class ParticleFilter:
             zeroout = 0                  
             if (occ > thresh or occ < 0): # if outside or in wall
                 zeroout = 1               # then set weight to zero   
-                hit = 1
             yaw = get_yaw_from_pose(part.pose) # particle yaw
             dr = self.map.info.resolution/2    # small step for ray tracing
             err = 0
-            for i in [0,89,179,269]:      # look front, left, back, and right
+            for i in [0,90,180,270]:      # look front, left, back, and right
                 hit = 0
                 rr = 0
-                while (hit == 0):# trace a ray until we hit a wall 
-                    rr = rr + dr  # move ray forward
-                    sx = px + math.cos(yaw+i*math.pi/180)*rr 
-                    sy = py + math.sin(yaw+i*math.pi/180)*rr 
-                    col = int((sx - min_x)/self.map.info.resolution)
-                    row = int((sy - min_y)/self.map.info.resolution) 
-                    index = row*self.map.info.width + col
-                    occ = self.map.data[index]  # check to see if hit a wall yet, or outside
-                    if (occ > thresh or occ < 0 or sx > max_x or sy > max_y
-                        or sx < min_x or sy < min_y or rr>max_x): # if occupied then we hit the wall
-                        hit = 1
-                # if the laser has a valid value in this direction, calculate the error
-                # if the laser is infinite there, then we'll ignore this direction
-                erri = (range_data[i]-rr) if (range_data[i] < 5) else 0  
+                if range_data[i] > 5: # this is the case when it's infinite
+                    erri = 0  
+                else:    
+                    while (hit == 0):# trace a ray until we hit a wall 
+                        rr = rr + dr  # move ray forward
+                        sx = px + math.cos(yaw+i*math.pi/180)*rr 
+                        sy = py + math.sin(yaw+i*math.pi/180)*rr 
+                        col = int((sx - min_x)/self.map.info.resolution)
+                        row = int((sy - min_y)/self.map.info.resolution) 
+                        index = row*self.map.info.width + col
+                        occ = self.map.data[index]  # check to see if hit a wall yet, or outside
+                        if (occ > thresh or occ < 0 or sx > max_x or sy > max_y
+                            or sx < min_x or sy < min_y or rr>max_x): # if occupied then we hit the wall
+                            hit = 1
+                            # if the laser has a valid value in this direction, calculate the error
+                            # if the laser is infinite there, then we'll ignore this direction
+                    erri = (range_data[i]-rr) 
                 err = err + erri**2 # add up square errors
             if zeroout == 1: 
                 part.w = 0  # if we planned to zero this particle out, set weight to zero
