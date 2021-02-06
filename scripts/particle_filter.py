@@ -321,18 +321,19 @@ class ParticleFilter:
         # based on the particles within the particle cloud, update the robot pose estimate
         newpos = Pose()
         for part in self.particle_cloud: # loop over the particles and average the poses of all particles
-            newpos.position.x = newpos.position.x + part.pose.position.x/self.num_particles
-            newpos.position.y = newpos.position.y + part.pose.position.y/self.num_particles
-            newpos.orientation.x = newpos.orientation.x + part.pose.orientation.x/self.num_particles
-            newpos.orientation.y = newpos.orientation.y + part.pose.orientation.y/self.num_particles
-            newpos.orientation.z = newpos.orientation.z + part.pose.orientation.z/self.num_particles
-            newpos.orientation.w = newpos.orientation.w + part.pose.orientation.w/self.num_particles
-            norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
-                        +newpos.orientation.w**2)
-            newpos.orientation.x = newpos.orientation.x / norm # normalize the quaternions
-            newpos.orientation.y = newpos.orientation.y / norm # since ROS complained about an unnormalized one
-            newpos.orientation.z = newpos.orientation.z / norm
-            newpos.orientation.w = newpos.orientation.w / norm
+            newpos.position.x += (part.pose.position.x/self.num_particles)
+            newpos.position.y += (part.pose.position.y/self.num_particles)
+            newpos.orientation.x += (part.pose.orientation.x/self.num_particles)
+            newpos.orientation.y += (part.pose.orientation.y/self.num_particles)
+            newpos.orientation.z += (part.pose.orientation.z/self.num_particles)
+            newpos.orientation.w += (part.pose.orientation.w/self.num_particles)
+            # Not sure the purpose for normalization -Kiana
+            # norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
+            #             +newpos.orientation.w**2)
+            # newpos.orientation.x = newpos.orientation.x / norm # normalize the quaternions
+            # newpos.orientation.y = newpos.orientation.y / norm # since ROS complained about an unnormalized one
+            # newpos.orientation.z = newpos.orientation.z / norm
+            # newpos.orientation.w = newpos.orientation.w / norm
         self.robot_estimate= newpos
 
 
