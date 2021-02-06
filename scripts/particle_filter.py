@@ -178,9 +178,9 @@ class ParticleFilter:
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0 by dividing by sum over all particle weights
-        sum_weights = 0
+        sum_weights = 0.0
         for part in self.particle_cloud:
-            sum_weights = sum_weights + part.w
+            sum_weights += part.w
         for part in self.particle_cloud:
             part.w = part.w / sum_weights
 
@@ -399,29 +399,17 @@ class ParticleFilter:
         curr_y = self.odom_pose.pose.position.y
         old_y = self.odom_pose_last_motion_update.pose.position.y
         d_y = curr_y - old_y
-        
-        curr_qx = self.odom_pose.pose.orientation.x
-        curr_qy = self.odom_pose.pose.orientation.y
-        curr_qz = self.odom_pose.pose.orientation.z
-        curr_qw = self.odom_pose.pose.orientation.w
+
         curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
-        old_qx = self.odom_pose_last_motion_update.pose.orientation.x
-        old_qy = self.odom_pose_last_motion_update.pose.orientation.y
-        old_qz = self.odom_pose_last_motion_update.pose.orientation.z
-        old_qw = self.odom_pose_last_motion_update.pose.orientation.w
         old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
-        d_qx = curr_qx-old_qx
-        d_qy = curr_qy-old_qy
-        d_qz = curr_qz-old_qz
-        d_qw = curr_qw-old_qw
         d_yaw = curr_yaw - old_yaw
         for part in self.particle_cloud:
             # move the particle x and y coordinates, and add a small random amount in each direction
-            part.pose.position.x = part.pose.position.x + d_x + np.random.normal()*self.map.info.resolution*2
-            part.pose.position.y = part.pose.position.y + d_y + np.random.normal()*self.map.info.resolution*2
+            part.pose.position.x += (d_x + np.random.normal()*self.map.info.resolution*2)
+            part.pose.position.y += (d_y + np.random.normal()*self.map.info.resolution*2)
             # update the yaw, and then add a small uniform error to the yaw 
             q = quaternion_from_euler(0,0,get_yaw_from_pose(part.pose)+d_yaw+uniform(-1,1)*math.pi/16)
-            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion
+            # q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion - Not sure why this is needed
             part.pose.orientation.x = q[0]
             part.pose.orientation.y = q[1]
             part.pose.orientation.z = q[2]
