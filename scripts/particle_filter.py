@@ -74,6 +74,12 @@ class ParticleFilter:
         # initialize this particle filter node
         rospy.init_node('turtlebot3_particle_filter')
 
+        # Attempt 1 to fix timing
+        # wait = True
+        # while wait:
+        #     last_ros_time_ = rospy.get_time()
+        #     if (last_ros_time_ > 0):
+        #          wait = False
         # set the topic names and frame names
         self.base_frame = "base_footprint"
         self.map_topic = "map"
@@ -86,7 +92,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 2500  # more than about 1000 particles causes the wierd "no such transformation" error
+        self.num_particles = 5000  # more than about 1000 particles causes the wierd "no such transformation" error
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -198,36 +204,39 @@ class ParticleFilter:
         self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
     def resample_particles(self):
-        # Different Implementation
-        # probabilities = []
-        # for part in self.particle_cloud:
-        #     probabilities.append(part.w)
-        # n = self.num_particles
-        # particles_sample = draw_random_sample(self.particle_cloud, probabilities, self.num_particles)
-        
-        # for part in particles_sample:
-        #     part 
-        #############
-        minthresh = 10/self.num_particles # this weight threshold keeps about 90% of the particles 
-        indcs = np.array(range(self.num_particles)) # make index vector
-        probs =[]
-        for part in self.particle_cloud:  # make probability vector
-            probs.append(part.w)
-        bins = np.add.accumulate(probs)   # make bins for the cumulative distribution from the weights
+        # Simpler Implementation
+        probabilities = []
         for part in self.particle_cloud:
-            if (part.w < minthresh):      # if the particle weight is below the thrshold we resample it
-                idx = indcs[np.digitize(random(),bins)]  # sample from the distribution
-                # update the particle position to the sampled particle, and add a normal noise offset to x and y position
-                part.pose.position.x = self.particle_cloud[idx].pose.position.x + np.random.normal()*self.map.info.resolution*2
-                part.pose.position.y = self.particle_cloud[idx].pose.position.y + np.random.normal()*self.map.info.resolution*2
-                # update the yaw angle to the sampled particle and add a small random angle offset
-                yaw = get_yaw_from_pose(self.particle_cloud[idx].pose)+(random()-.5)*math.pi/8
-                q = quaternion_from_euler(0,0,yaw)
-                q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion since ROS complained 
-                part.pose.orientation.x = q[0]
-                part.pose.orientation.y = q[1]
-                part.pose.orientation.z = q[2]
-                part.pose.orientation.w = q[3]
+            probabilities.append(part.w)
+        n = self.num_particles
+        self.particle_cloud = draw_random_sample(self.particle_cloud, probabilities, n)
+        
+        #############
+        # minthresh = 10/self.num_particles # this weight threshold keeps about 90% of the particles 
+        
+        # # Initialize Probability Vector
+        # probs =[]
+        # for part in self.particle_cloud:
+        #     probs.append(part.w)
+
+        # # make bins for the cumulative distribution from the weights
+        # bins = np.add.accumulate(probs)
+        # for part in self.particle_cloud:
+        #     if (part.w < minthresh):      # if the particle weight is below the threshold we resample it
+        #         # sample from the distribution
+        #         idx = self.particle_cloud[np.digitize(random(),bins)]
+
+        #         # update the particle position to the sampled particle, and add a normal noise offset to x and y position
+        #         part.pose.position.x = idx.pose.position.x + np.random.normal()*self.map.info.resolution*2
+        #         part.pose.position.y = idx.pose.position.y + np.random.normal()*self.map.info.resolution*2
+        #         # update the yaw angle to the sampled particle and add a small random angle offset
+        #         yaw = get_yaw_from_pose(idx.pose)+(random()-.5)*math.pi/8
+        #         q = quaternion_from_euler(0,0,yaw)
+        #         q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion since ROS complained 
+        #         part.pose.orientation.x = q[0]
+        #         part.pose.orientation.y = q[1]
+        #         part.pose.orientation.z = q[2]
+        #         part.pose.orientation.w = q[3]
 
     def robot_scan_received(self, data):
 
@@ -241,7 +250,13 @@ class ParticleFilter:
 
         # wait for a little bit for the transform to become avaliable (in case the scan arrives
         # a little bit before the odom to base_footprint transform was updated) 
-        self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
+        try:
+            self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
+            print("Transform work!")
+        except:
+            print("Waiting for transform...")
+            return
+
         if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
             return
 
