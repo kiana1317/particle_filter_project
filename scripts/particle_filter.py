@@ -144,28 +144,28 @@ class ParticleFilter:
                 self.occupancy_field.append(i)
 
     
-
     def initialize_particle_cloud(self):
-        # Wait until the occupancy field is populated
-        while not self.occupancy_field:
+        thresh = .1
+        while(self.map.info.resolution == 0): # wait for map to load
             pass
-
-        choices = self.occupancy_field
-        probability = 1.0 / len(choices)
-        probabilities = [probability] * len(choices)
-        n = self.num_particles
-        particles_sample = draw_random_sample(choices, probabilities, n)
-
-        for i in particles_sample:
-            p = Pose()
-            # translate the row grid to coordinates
-            width = self.map.info.width
-            origin_x = self.map.info.origin.position.x
-            origin_y = self.map.info.origin.position.y
-            p.position.y = origin_y + (i / width * self.map.info.resolution) 
-            p.position.x = origin_x + (i % width * self.map.info.resolution)
-            angle = uniform(0,2*math.pi)        # set a random yaw angle
-            q = quaternion_from_euler(0,0,angle) # quaternion for orientation
+        min_x = self.map.info.origin.position.x
+        min_y = self.map.info.origin.position.y
+        max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
+        max_y = min_y + self.map.info.resolution*(self.map.info.height-1)
+        for i in range(self.num_particles):
+            p=Pose()
+            valid = 0
+            while (valid == 0):
+                p.position.x = uniform(min_x,max_x)
+                p.position.y = uniform(min_y,max_y)
+                column = int((p.position.x - min_x)/self.map.info.resolution)
+                row = int((p.position.y - min_y)/self.map.info.resolution) 
+                index = row*self.map.info.width + column
+                occ = self.map.data[index]
+                if (occ > -1 and occ < thresh):
+                    valid = 1
+                    
+            q = quaternion_from_euler(0,0,uniform(0,359)) # quaternion for orientation
             p.orientation.x = q[0]
             p.orientation.y = q[1]
             p.orientation.z = q[2]
@@ -174,6 +174,35 @@ class ParticleFilter:
 
         self.normalize_particles()
         self.publish_particle_cloud()
+
+    #def initialize_particle_cloud_old(self): # this seems to have a bug if turning to wall while initializing
+        # all of the particles end up in the bottom of the house if you turn while its initializing.
+        # Wait until the occupancy field is populated
+        #while not self.occupancy_field:
+        #    pass
+        #choices = self.occupancy_field
+        #probability = 1.0 / len(choices)
+        #probabilities = [probability] * len(choices)
+        #n = self.num_particles
+        #particles_sample = draw_random_sample(choices, probabilities, n)
+#
+#        for i in particles_sample:
+#            p = Pose()
+#            # translate the row grid to coordinates
+#            width = self.map.info.width
+#            origin_x = self.map.info.origin.position.x
+#            origin_y = self.map.info.origin.position.y
+#            p.position.y = origin_y + (i / width * self.map.info.resolution) 
+#            p.position.x = origin_x + (i % width * self.map.info.resolution)
+#            angle = uniform(0,2*math.pi)        # set a random yaw angle
+#            q = quaternion_from_euler(0,0,angle) # quaternion for orientation
+#            p.orientation.x = q[0]
+#            p.orientation.y = q[1]
+#            p.orientation.z = q[2]
+#            p.orientation.w = q[3]
+#            self.particle_cloud.append(Particle(p,1))
+#        self.normalize_particles()
+#        self.publish_particle_cloud()
 
 
     def normalize_particles(self):
@@ -252,7 +281,7 @@ class ParticleFilter:
         # a little bit before the odom to base_footprint transform was updated) 
         try:
             self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
-            print("Transform work!")
+            #print("Transform work!")
         except:
             print("Waiting for transform...")
             return
@@ -328,12 +357,12 @@ class ParticleFilter:
             newpos.orientation.z += (part.pose.orientation.z/self.num_particles)
             newpos.orientation.w += (part.pose.orientation.w/self.num_particles)
             # Not sure the purpose for normalization -Kiana
-            # norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
-            #             +newpos.orientation.w**2)
-            # newpos.orientation.x = newpos.orientation.x / norm # normalize the quaternions
-            # newpos.orientation.y = newpos.orientation.y / norm # since ROS complained about an unnormalized one
-            # newpos.orientation.z = newpos.orientation.z / norm
-            # newpos.orientation.w = newpos.orientation.w / norm
+            norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
+                         +newpos.orientation.w**2)
+            newpos.orientation.x = newpos.orientation.x / norm # normalize the quaternions
+            newpos.orientation.y = newpos.orientation.y / norm # since ROS complained about an unnormalized one
+            newpos.orientation.z = newpos.orientation.z / norm
+            newpos.orientation.w = newpos.orientation.w / norm
         self.robot_estimate= newpos
 
 
@@ -410,7 +439,7 @@ class ParticleFilter:
             part.pose.position.y += (d_y + np.random.normal()*self.map.info.resolution*2)
             # update the yaw, and then add a small uniform error to the yaw 
             q = quaternion_from_euler(0,0,get_yaw_from_pose(part.pose)+d_yaw+uniform(-1,1)*math.pi/16)
-            # q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion - Not sure why this is needed
+            q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion 
             part.pose.orientation.x = q[0]
             part.pose.orientation.y = q[1]
             part.pose.orientation.z = q[2]
