@@ -1,11 +1,34 @@
 # Particle Filter Project
 
+## Team
+Kiana Hobbs, Elizabeth Singer
+
+## Writeup
+
+    Objectives description (2-3 sentences): Describe the goal of this project.
+    High-level description (1 paragraph): At a high-level, describe how you solved the problem of robot localization. What are the main components of your approach?
+    For each of the 3 main steps of the particle filter (movement, computation of importance weights, and resampling), please provide the following:
+        Code location (1-3 sentences): Please describe where in your code you implemented this step of the particle filter.
+        Functions/code description (1-3 sentences per function / portion of code): Describe the structure of your code. For the functions you wrote, describe what each of them does and how they contribute to this step of the particle filter.
+    Challenges (1 paragraph): Describe the challenges you faced and how you overcame them.
+    Future work (1 paragraph): If you had more time, how would you improve your particle filter?
+    Takeaways (at least 2 bullet points with 2-3 sentences per bullet point): What are your key takeaways from this project that would help you/others in future robot programming assignments working in pairs? For each takeaway, provide a few sentences of elaboration.
+
+### Objective
+### High-level Approach
+### In-depth Approach
+#### Movement
+#### Computation of Importance Weights
+#### Resampling
+### Challenges
+### Future Work
+### Takeaways
+### Gif
 ![Particles in motion](particle_filter.gif)
 
 ![Motion and navigate to goal](particle_filter_movie.gif)
-## Team
-Kiana Hobbs, Elizabeth Singer
-## Implementation
+
+## Implementation Plan
 ### Initialize Particle Cloud
 How you will initialize your particle cloud (initialize_particle_cloud()):
 

@@ -240,32 +240,6 @@ class ParticleFilter:
         n = self.num_particles
         self.particle_cloud = draw_random_sample(self.particle_cloud, probabilities, n)
         
-        #############
-        # minthresh = 10/self.num_particles # this weight threshold keeps about 90% of the particles 
-        
-        # # Initialize Probability Vector
-        # probs =[]
-        # for part in self.particle_cloud:
-        #     probs.append(part.w)
-
-        # # make bins for the cumulative distribution from the weights
-        # bins = np.add.accumulate(probs)
-        # for part in self.particle_cloud:
-        #     if (part.w < minthresh):      # if the particle weight is below the threshold we resample it
-        #         # sample from the distribution
-        #         idx = self.particle_cloud[np.digitize(random(),bins)]
-
-        #         # update the particle position to the sampled particle, and add a normal noise offset to x and y position
-        #         part.pose.position.x = idx.pose.position.x + np.random.normal()*self.map.info.resolution*2
-        #         part.pose.position.y = idx.pose.position.y + np.random.normal()*self.map.info.resolution*2
-        #         # update the yaw angle to the sampled particle and add a small random angle offset
-        #         yaw = get_yaw_from_pose(idx.pose)+(random()-.5)*math.pi/8
-        #         q = quaternion_from_euler(0,0,yaw)
-        #         q = q/math.sqrt(q[0]**2+q[1]**2+q[2]**2+q[3]**2) # normalize the quaternion since ROS complained 
-        #         part.pose.orientation.x = q[0]
-        #         part.pose.orientation.y = q[1]
-        #         part.pose.orientation.z = q[2]
-        #         part.pose.orientation.w = q[3]
 
     def robot_scan_received(self, data):
 
@@ -369,12 +343,7 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
         thresh = .1   # used to find the walls with the ray tracing method
         range_data = np.array(data.ranges) # scanner range data
-        max_r = np.amax(range_data,where=~np.isinf(range_data),initial=-1,axis=0)
         # this is the largest non-infinite range from the scanner
-        forval = min(range_data[0],max_r) # straight ahead scanner value
-        lval = min(range_data[90],max_r)  # left scanner value
-        bval = min(range_data[180],max_r) # behind scanner value
-        rval = min(range_data[270],max_r) # right scanner value
         min_x = self.map.info.origin.position.x
         min_y = self.map.info.origin.position.y
         max_x = min_x + self.map.info.resolution*(self.map.info.width-1)
