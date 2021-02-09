@@ -6,17 +6,21 @@ Kiana Hobbs, Elizabeth Singer
 ## Writeup
 
 ### Objective
-The goal of this project was to use principles about robot localization to help a robot locate itself within a room. Using a map of the space, we generated and updated a particle cloud to reflect the robot's hypothesized location within the room using movements, orientations, and objects within the space.
+*Describe the goal of this project.*
+The goal of this project was to use principles about robot localization to help the robot locate itself within a room. Using just a map of the space and Monte Carlo localization, the robot must localize itself within the context of the map and use that information to navigate towards the exit.
 ### High-level Approach
- High-level description (1 paragraph): At a high-level, describe how you solved the problem of robot localization. What are the main components of your approach?
+*High-level description (1 paragraph): At a high-level, describe how you solved the problem of robot localization. What are the main components of your approach?*
+To solve the poblem of robot localization, we used a randomized particle cloud to pinpoint the position of the robot using information about the map, the robot's actual movements, and the proximity of objects within the space. Furthermore, we parsed the assignment into three parts: movement, computation of importance weights, and resampling. After initializing a particle cloud using the map information about occupancy (what spaces could the robot actually inhabit given the map), we mirrored the robot's movements onto the particles within the particle cloud to get a sense of what the particle's positioning would be as the robot. To compute the importance weights, we used parts of the likelihood fields calculation to determine how closely what the robot was sensing around itself aligned the surroundings for each particle. After computing the updated weights for the particles, we resampled the particles within the particle cloud to reflect the updated weighted probabilities.
 ### In-depth Approach
-    For each of the 3 main steps of the particle filter (movement, computation of importance weights, and resampling), please provide the following:
-        Code location (1-3 sentences): Please describe where in your code you implemented this step of the particle filter.
-        Functions/code description (1-3 sentences per function / portion of code): Describe the structure of your code. For the functions you wrote, describe what each of them does and how they contribute to this step of the particle filter.
+*For each of the 3 main steps of the particle filter (movement, computation of importance weights, and resampling), please provide the following:*
+1. *Code location (1-3 sentences): Please describe where in your code you implemented this step of the particle filter.*
+2. *Functions/code description (1-3 sentences per function / portion of code): Describe the structure of your code. For the functions you wrote, describe what each of them does and how they contribute to this step of the particle filter.*
 #### Movement
     
 #### Computation of Importance Weights
+
 #### Resampling
+
 ### Challenges
 Challenges (1 paragraph): Describe the challenges you faced and how you overcame them.
 ### Future Work
