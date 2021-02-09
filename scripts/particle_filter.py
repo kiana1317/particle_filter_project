@@ -174,9 +174,9 @@ class ParticleFilter:
 
         self.normalize_particles()
         self.publish_particle_cloud()
-
-    #def initialize_particle_cloud_old(self): # this seems to have a bug if turning to wall while initializing
-        # all of the particles end up in the bottom of the house if you turn while its initializing.
+        
+    # Second Implementation of Initialization, included by Sarah's request
+    #def initialize_particle_cloud_old(self): 
         # Wait until the occupancy field is populated
         #while not self.occupancy_field:
         #    pass
@@ -233,7 +233,7 @@ class ParticleFilter:
         self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
     def resample_particles(self):
-        # Simpler Implementation
+        # Use the new weights per particle to resample a random sample of particles using the weights as the new probabilities
         probabilities = []
         for part in self.particle_cloud:
             probabilities.append(part.w)
@@ -320,8 +320,8 @@ class ParticleFilter:
 
 
     def update_estimated_robot_pose(self):
-        #pass
-        # based on the particles within the particle cloud, update the robot pose estimate
+    
+        # Take the average of the particles in the cloud as the pose estimate
         newpos = Pose()
         for part in self.particle_cloud: # loop over the particles and average the poses of all particles
             newpos.position.x += (part.pose.position.x/self.num_particles)
@@ -330,7 +330,7 @@ class ParticleFilter:
             newpos.orientation.y += (part.pose.orientation.y/self.num_particles)
             newpos.orientation.z += (part.pose.orientation.z/self.num_particles)
             newpos.orientation.w += (part.pose.orientation.w/self.num_particles)
-            # Not sure the purpose for normalization -Kiana
+            # Normalization to account for launch complier warning
             norm = math.sqrt(newpos.orientation.x**2 + newpos.orientation.y**2+ newpos.orientation.z**2
                          +newpos.orientation.w**2)
             newpos.orientation.x = newpos.orientation.x / norm # normalize the quaternions
