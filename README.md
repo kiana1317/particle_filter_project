@@ -1,5 +1,5 @@
 # Particle Filter Project
-
+___
 ## Team
 Kiana Hobbs, Elizabeth Singer
 
@@ -9,10 +9,12 @@ Kiana Hobbs, Elizabeth Singer
 *Describe the goal of this project.*
 
 The goal of this project was to use principles about robot localization to help the robot locate itself within a room. Using just a map of the space and Monte Carlo localization, the robot must localize itself within the context of the map and use that information to navigate towards the exit.
+___
 ### High-level Approach
 *High-level description (1 paragraph): At a high-level, describe how you solved the problem of robot localization. What are the main components of your approach?*
 
 To solve the poblem of robot localization, we used a randomized particle cloud to pinpoint the position of the robot using information about the map, the robot's actual movements, and the proximity of objects within the space. Furthermore, we parsed the assignment into three parts: movement, computation of importance weights, and resampling. After initializing a particle cloud using the map information about occupancy (what spaces could the robot actually inhabit given the map), we mirrored the robot's movements onto the particles within the particle cloud to get a sense of what the particle's positioning would be as the robot. To compute the importance weights, we used parts of the likelihood fields calculation to determine how closely what the robot was sensing around itself aligned the surroundings for each particle. After computing the updated weights for the particles, we resampled the particles within the particle cloud to reflect the updated weighted probabilities.
+___
 ### In-depth Approach
 *For each of the 3 main steps of the particle filter (movement, computation of importance weights, and resampling), please provide the following:*
 1. *Code location (1-3 sentences): Please describe where in your code you implemented this step of the particle filter.*
@@ -23,12 +25,16 @@ To solve the poblem of robot localization, we used a randomized particle cloud t
 
 #### Resampling
 
+____
 ### Challenges
 Challenges (1 paragraph): Describe the challenges you faced and how you overcame them.
+____
 ### Future Work
 Future work (1 paragraph): If you had more time, how would you improve your particle filter?
+____
 ### Takeaways
 Takeaways (at least 2 bullet points with 2-3 sentences per bullet point): What are your key takeaways from this project that would help you/others in future robot programming assignments working in pairs? For each takeaway, provide a few sentences of elaboration.
+____
 ### Gif
 ![Particles in motion](particle_filter.gif)
 
