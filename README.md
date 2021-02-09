@@ -23,24 +23,24 @@ ___
 
 Movement is implemented through the ```update_particles_with_motion_model()``` function and somewhat with the ```update_estimated_robot_pose()```.
 
-* ```update_particles_with_motion_model()```:
+* ```update_particles_with_motion_model()```: This function uses the robot's actual movements to reproduce those movements for each particle. To do so, we found the change in the robot's x, y, and yaw, and added that change to the particle's x, y, and yaw.
 
-* ```update_estimated_robot_pose()```:
+* ```update_estimated_robot_pose()```:  To find the robot's estimated pose, we calculated the average particle from the particle cloud and set that as the estimation. As such, the estimated pose served as a collective of the existing particles.
 
 #### Computation of Importance Weights
  Computation of importance weights is implemented in ```update_particle_weights_with_measurement_model()``` and those weights are normalized in ```normalize_particles()```.
 
-* ```update_particle_weights_with_measurement_model()```:
+* ```update_particle_weights_with_measurement_model()```: This function generates updated particles weights by comparing scan readings of the robot and the particle about objects surrounding the robot/particle. To do so, we utilized the likelihood fields for range finders at angles 0, 90, 180, and 270 degrees to determine if a given particle was in the location of the robot, how likely would it sense the same objects.
 
-* ```normalize_particles()```: 
+* ```normalize_particles()```: This function updates the weight of each particle such that the sum of the particle weights equates to one. This function ensures that all the weights are scaled relatively to the total weights of the particles.
 
 #### Resampling
 
 Resampling is implemented in the ```resample_particles()``` function with those particles being initialized in ```initialize_particle_cloud() ```.
 
-* ```initialize_particle_cloud()```: 
+* ```initialize_particle_cloud()```: This function generates the initial particles that will compose the particle cloud. In the function, we use the occupancy field information from the map data to determine which spaces in the map the robot could occupy, and then generate a random set of "n" particles from those possible positions with each particle having the same probability for being selected. 
 
-* ```resample_particles()```:
+* ```resample_particles()```: This function regenerates the particle cloud using the updated particle weights after normalization and robot movements. In the function, we randomly select "n" particles as the new particle cloud using the particle weights as the probability for each particle.
 
 ____
 ### Challenges
