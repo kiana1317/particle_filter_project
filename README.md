@@ -13,27 +13,51 @@ ___
 ### High-level Approach
 *High-level description (1 paragraph): At a high-level, describe how you solved the problem of robot localization. What are the main components of your approach?*
 
-To solve the poblem of robot localization, we used a randomized particle cloud to pinpoint the position of the robot using information about the map, the robot's actual movements, and the proximity of objects within the space. Furthermore, we parsed the assignment into three parts: movement, computation of importance weights, and resampling. After initializing a particle cloud using the map information about occupancy (what spaces could the robot actually inhabit given the map), we mirrored the robot's movements onto the particles within the particle cloud to get a sense of what the particle's positioning would be as the robot. To compute the importance weights, we used parts of the likelihood fields calculation to determine how closely what the robot was sensing around itself aligned the surroundings for each particle. After computing the updated weights for the particles, we resampled the particles within the particle cloud to reflect the updated weighted probabilities.
+To solve the problem of robot localization, we used a randomized particle cloud to pinpoint the position of the robot using information about the map, the robot's actual movements, and the proximity of objects within the space. Furthermore, we parsed the assignment into three parts: movement, computation of importance weights, and resampling. After initializing a particle cloud using the map information about occupancy (what spaces could the robot inhabit given the map), we mirrored the robot's movements onto the particles within the particle cloud to get a sense of what the particle's positioning would be as the robot. To compute the importance weights, we used parts of the likelihood fields calculation to determine how closely what the robot was sensing around itself aligned the surroundings for each particle. After computing the updated weights for the particles, we resampled the particles within the particle cloud to reflect the updated weighted probabilities.
 ___
 ### In-depth Approach
 *For each of the 3 main steps of the particle filter (movement, computation of importance weights, and resampling), please provide the following:*
 1. *Code location (1-3 sentences): Please describe where in your code you implemented this step of the particle filter.*
 2. *Functions/code description (1-3 sentences per function / portion of code): Describe the structure of your code. For the functions you wrote, describe what each of them does and how they contribute to this step of the particle filter.*
 #### Movement
-    
+
+Movement is implemented through the ```update_particles_with_motion_model()``` function and somewhat with the ```update_estimated_robot_pose()```.
+
+* ```update_particles_with_motion_model()```:
+
+* ```update_estimated_robot_pose()```:
+
 #### Computation of Importance Weights
+ Computation of importance weights is implemented in ```update_particle_weights_with_measurement_model()``` and those weights are normalized in ```normalize_particles()```.
+
+* ```update_particle_weights_with_measurement_model()```:
+
+* ```normalize_particles()```: 
 
 #### Resampling
 
+Resampling is implemented in the ```resample_particles()``` function with those particles being initialized in ```initialize_particle_cloud() ```.
+
+* ```initialize_particle_cloud()```: 
+
+* ```resample_particles()```:
+
 ____
 ### Challenges
-Challenges (1 paragraph): Describe the challenges you faced and how you overcame them.
+*Challenges (1 paragraph): Describe the challenges you faced and how you overcame them.*
+
+One challenge we faced was accounting for concurrency issue between our algorithm’s computation time and the reception of transformation data. This issue only emerged when we used many particles: more than 5,000 particles. To resolve this issue, we ensured that the script ran the transformations in simulation time by incorporating a sim_time parameter into our ROS launch files.
 ____
 ### Future Work
-Future work (1 paragraph): If you had more time, how would you improve your particle filter?
+*Future work (1 paragraph): If you had more time, how would you improve your particle filter?*
+
+To improve on our particle filter, we could examine more than just the 4 cardinal angles of the robot when calculating the particles' weight using the measurement model. By expanding beyond just 0, 90, 180, and 270 degrees, we can get a more accurate weight calculation for each particle and thus a more accurate particle cloud depiction for resampling. Moreover, another means for improving our filter would be to explore ways to make our algorithm more efficient, such that we could initialize a larger sum of particles without enduring a toll on the algorithms processing speed.
 ____
 ### Takeaways
-Takeaways (at least 2 bullet points with 2-3 sentences per bullet point): What are your key takeaways from this project that would help you/others in future robot programming assignments working in pairs? For each takeaway, provide a few sentences of elaboration.
+*Takeaways (at least 2 bullet points with 2-3 sentences per bullet point): What are your key takeaways from this project that would help you/others in future robot programming assignments working in pairs? For each takeaway, provide a few sentences of elaboration.*
+
+1. Work collaborately when you can on each section: By jointly working on each function, not only were we able to gain a deeper grasp of the subject matter, but we were also able to develop more efficient and concise algorithms while learning from each other during the process. This method of collaboration offered a stronger sense of understanding and material connection, versus had we were to create a hard split between the functions and contributions.
+2. 
 ____
 ### Gif
 ![Particles in motion](particle_filter.gif)
