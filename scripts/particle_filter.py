@@ -255,9 +255,7 @@ class ParticleFilter:
         # a little bit before the odom to base_footprint transform was updated) 
         try:
             self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
-            #print("Transform work!")
         except:
-            print("Waiting for transform...")
             return
 
         if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
