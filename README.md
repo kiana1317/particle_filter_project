@@ -8,12 +8,36 @@ Kiana Hobbs, Elizabeth Singer
 ### Objective
 *Describe the goal of this project.*
 
-The goal of this project was to use principles about robot localization to help the robot locate itself within a room. Using just a map of the space and Monte Carlo localization, the robot must localize itself within the context of the map and use that information to navigate towards the exit.
+The goal of this project was to use principles of particle filtering
+and robot localization to help the robot self-localize within a
+room. Using just a map of the space and Monte Carlo localization, the
+robot must localize itself, including its estimated pose, within the
+context of the map and use that information to navigate towards the
+exit. 
 ___
 ### High-level Approach
 *High-level description (1 paragraph): At a high-level, describe how you solved the problem of robot localization. What are the main components of your approach?*
 
-To solve the problem of robot localization, we used a randomized particle cloud to pinpoint the position of the robot using information about the map, the robot's actual movements, and the proximity of objects within the space. Furthermore, we parsed the assignment into three parts: movement, computation of importance weights, and resampling. After initializing a particle cloud using the map information about occupancy (what spaces could the robot inhabit given the map), we mirrored the robot's movements onto the particles within the particle cloud to get a sense of what the particle's positioning would be as the robot. To compute the importance weights, we used parts of the likelihood fields calculation to determine how closely what the robot was sensing around itself aligned the surroundings for each particle. After computing the updated weights for the particles, we resampled the particles within the particle cloud to reflect the updated weighted probabilities.
+To solve the problem of robot localization, we used particle
+filtering, which makes use of a randomized particle cloud of
+hypotheses for the actual robot pose to construct a posterior density
+for the true robot pose, using information
+about the map, data from the robot's actual movements, the proximity of
+objects within the space as reported by the robots scan sensor, and
+proximity of objects in the map to the hypothesized particle
+locations and orientations. Furthermore, we parsed the assignment into 
+three parts: movement, computation of importance weights, and
+resampling. After initializing a particle cloud using the map
+information about occupancy (what spaces could the robot inhabit given
+the map), we mirrored the robot's movements onto the particles within
+the particle cloud, which provide a sense of the particle's positioning
+within the map as the robot moves within the space. To compute the importance weights, we used
+a form of ray-tracing to construct parts of the likelihood field and determine how closely
+the scan output from the robot aligned with a hypothetical scan
+centered on, and oriented with each particle. After computing the
+updated weights for the particles based on the goodness of fit of
+these scans, we resampled the particles within the particle cloud to reflect the
+updated weighted probabilities. 
 ___
 ### In-depth Approach
 *For each of the 3 main steps of the particle filter (movement, computation of importance weights, and resampling), please provide the following:*
@@ -23,16 +47,16 @@ ___
 
 Movement is implemented through the ```update_particles_with_motion_model()``` function and somewhat with the ```update_estimated_robot_pose()```.
 
-* ```update_particles_with_motion_model()```: This function uses the robot's actual movements to reproduce those movements for each particle. To do so, we found the change in the robot's x, y, and yaw, and added that change to the particle's x, y, and yaw.
+* ```update_particles_with_motion_model()```: This function uses the robot's actual movements to reproduce those movements for each particle. To do so, we found the change in the robot's x, y, and yaw, and added that change to the particle's x, y, and yaw. To facilitate particle drift, we added a small normal perturbation to the location and a small uniform perturbation to the yaw of the particles, so that resampled particles could slowly drift apart and better model the posterior density for the robot pose.
 
-* ```update_estimated_robot_pose()```:  To find the robot's estimated pose, we calculated the average particle from the particle cloud and set that as the estimation. As such, the estimated pose served as a collective of the existing particles.
+* ```update_estimated_robot_pose()```:  To find the robot's estimated pose, we calculated the average of the poses of each of the particles from the particle cloud and set this as the estimated pose. As such, the estimated pose served as a collective of the existing particles, or its mean value.
 
 #### Computation of Importance Weights
  Computation of importance weights is implemented in ```update_particle_weights_with_measurement_model()``` and those weights are normalized in ```normalize_particles()```.
 
-* ```update_particle_weights_with_measurement_model()```: This function generates updated particles weights by comparing scan readings of the robot and the particle about objects surrounding the robot/particle. To do so, we utilized the likelihood fields for range finders at angles 0, 90, 180, and 270 degrees to determine if a given particle was in the location of the robot, how likely would it sense the same objects.
+* ```update_particle_weights_with_measurement_model()```: This function generates updated particles weights by comparing scan readings of the robot and the particle about objects surrounding the robot/particle. To do so, we utilized the likelihood fields for range finders at angles 0, 90, 180, and 270 degrees to determine the likelihood that a given particle was in the same pose (location and orientation) of the robot, by considering how likely they would sense the same objects in each of these four directions.
 
-* ```normalize_particles()```: This function updates the weight of each particle such that the sum of the particle weights equates to one. This function ensures that all the weights are scaled relatively to the total weights of the particles.
+* ```normalize_particles()```: This function updates the weight of each particle such that the sum of the particle weights equates to one. This function ensures that all the weights are scaled by the total weights of the particles, so that they are a probability distribution.
 
 #### Resampling
 
@@ -46,18 +70,18 @@ ____
 ### Challenges
 *Challenges (1 paragraph): Describe the challenges you faced and how you overcame them.*
 
-One challenge we faced was accounting for concurrency issue between our algorithm’s computation time and the reception of transformation data. This issue only emerged when we used many particles: more than 5,000 particles. To resolve this issue, we ensured that the script ran the transformations in simulation time by incorporating a sim_time parameter into our ROS launch files.
+One challenge we faced was accounting for concurrency issue between our algorithm’s computation time and the reception of transformation data. This issue only emerged when we used many particles: more than 5,000 particles. To resolve this issue, we ensured that the script ran the transformations in simulation time by incorporating a sim_time parameter into our ROS launch files. Other challenges included figuring out the right amount of noise to add to the particle pose when updating them with the robot motion so that it was enough that particles didn't remain on top of one another, but was not so much that they did not represent the robot position well.  This also needed to be large enough so that there were enough particles near the true robot pose so that some of them would match the measurements of the robot.  One of the ROS windows showed an error message about unnormalized quaternions due to the estimated robot pose, so we normalized the quaternions after making new ones from averaging. Another challenge was in debugging the measurement model with many particles all over the map. By using a single particle (or all particles having the same, fixed pose), it was easy to debug this function.
 ____
 ### Future Work
 *Future work (1 paragraph): If you had more time, how would you improve your particle filter?*
 
-To improve on our particle filter, we could examine more than just the 4 cardinal angles of the robot when calculating the particles' weight using the measurement model. By expanding beyond just 0, 90, 180, and 270 degrees, we can get a more accurate weight calculation for each particle and thus a more accurate particle cloud depiction for resampling. Moreover, another means for improving our filter would be to explore ways to make our algorithm more efficient, such that we could initialize a larger sum of particles without enduring a toll on the algorithms processing speed.
+To improve on our particle filter, we could examine more than just the 4 cardinal angles of the robot when calculating the particles' weight using the measurement model. By expanding beyond just 0, 90, 180, and 270 degrees, we can get a more accurate weight calculation for each particle and thus a more accurate particle cloud depiction for resampling. Moreover, another means for improving our filter would be to explore ways to make our algorithm more efficient, such that we could initialize a larger sum of particles without enduring a toll on the algorithms processing speed. We could also explore more ways to capture the likelihood of a match between the ray-traced scan from each particle and the lidar scan. We could also look at ways to re-initialize the particle field periodically to prevent early collapse of the particles in an incorrect position.
 ____
 ### Takeaways
 *Takeaways (at least 2 bullet points with 2-3 sentences per bullet point): What are your key takeaways from this project that would help you/others in future robot programming assignments working in pairs? For each takeaway, provide a few sentences of elaboration.*
 
 1. Work collaborately when you can on each section: By jointly working on each function, not only were we able to gain a deeper grasp of the subject matter, but we were also able to develop more efficient and concise algorithms while learning from each other during the process. This method of collaboration offered a stronger sense of understanding and material connection, versus had we were to create a hard split between the functions and contributions.
-2. 
+2. The skeleton for the particle filter algorithm was very helpful in that it provided enough of a guide on the operation of the algoriuthm to get started, but not so much that we didn't need to learn a lot about its operation.  There are probably many ways that we could have implemented the measurement function using built-in functions, but the map and some geometry was enough to do this, and it helped us learn alot about the problem.
 ____
 ### Gif
 ![Particles in motion](particle_filter.gif)
