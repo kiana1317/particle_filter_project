@@ -23,7 +23,7 @@ filtering, which makes use of a randomized particle cloud of
 hypotheses for the actual robot pose to construct a posterior density
 for the true robot pose, using information
 about the map, data from the robot's actual movements, the proximity of
-objects within the space as reported by the robots scan sensor, and
+objects within the space as reported by the robot's scan sensor, and
 proximity of objects in the map to the hypothesized particle
 locations and orientations. Furthermore, we parsed the assignment into 
 three parts: movement, computation of importance weights, and
