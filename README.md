@@ -81,7 +81,7 @@ ____
 *Takeaways (at least 2 bullet points with 2-3 sentences per bullet point): What are your key takeaways from this project that would help you/others in future robot programming assignments working in pairs? For each takeaway, provide a few sentences of elaboration.*
 
 1. Work collaborately when you can on each section: By jointly working on each function, not only were we able to gain a deeper grasp of the subject matter, but we were also able to develop more efficient and concise algorithms while learning from each other during the process. This method of collaboration offered a stronger sense of understanding and material connection, versus had we were to create a hard split between the functions and contributions.
-2. The skeleton for the particle filter algorithm was very helpful in that it provided enough of a guide on the operation of the algoriuthm to get started, but not so much that we didn't need to learn a lot about its operation.  There are probably many ways that we could have implemented the measurement function using built-in functions, but the map and some geometry was enough to do this, and it helped us learn alot about the problem.
+2. The skeleton for the particle filter algorithm was very helpful in that it provided enough of a guide on the operation of the algorithm to get started, but not so much that we didn't need to learn a lot about its operation.  There are probably many ways that we could have implemented the measurement function using built-in functions, but the map and some geometry was enough to do this, and it helped us learn alot about the problem.
 ____
 ### Gif
 ![Particles in motion](particle_filter.gif)
